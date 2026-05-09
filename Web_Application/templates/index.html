@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laptop Price Predictor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep:       #060a12;
+            --bg-card:       rgba(12, 20, 38, 0.85);
+            --border-subtle: rgba(0, 210, 255, 0.12);
+            --border-glow:   rgba(0, 210, 255, 0.45);
+            --accent:        #00d2ff;
+            --accent-dim:    rgba(0, 210, 255, 0.15);
+            --accent-2:      #7b2dff;
+            --text-primary:  #e8f4ff;
+            --text-muted:    #6a8aaa;
+            --input-bg:      rgba(255, 255, 255, 0.04);
+            --input-hover:   rgba(0, 210, 255, 0.07);
+            --success:       #00ffb3;
+        }
+
+        *, *::before, *::after {
+            margin: 0; padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--bg-deep);
+            font-family: 'Exo 2', sans-serif;
+            color: var(--text-primary);
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 40px 16px 60px;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0,210,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,210,255,0.04) 1px, transparent 1px);
+            background-size: 44px 44px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            width: 600px; height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(123,45,255,0.18) 0%, transparent 70%);
+            top: -160px; right: -180px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .orb-bottom {
+            position: fixed;
+            width: 500px; height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,210,255,0.12) 0%, transparent 70%);
+            bottom: -120px; left: -120px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .card {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 560px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 44px 40px 40px;
+            backdrop-filter: blur(24px);
+            box-shadow:
+                0 0 0 1px rgba(0,210,255,0.06),
+                0 24px 80px rgba(0,0,0,0.6),
+                inset 0 1px 0 rgba(255,255,255,0.06);
+            animation: cardIn 0.7s cubic-bezier(0.22,1,0.36,1) both;
+        }
+
+        @keyframes cardIn {
+            from { opacity:0; transform: translateY(28px) scale(0.98); }
+            to   { opacity:1; transform: translateY(0)    scale(1); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: var(--accent-dim);
+            border: 1px solid var(--border-glow);
+            border-radius: 100px;
+            padding: 5px 14px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        .badge-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity:1; transform: scale(1); }
+            50%       { opacity:0.5; transform: scale(0.8); }
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+            background: linear-gradient(135deg, #e8f4ff 20%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 400;
+            letter-spacing: 0.01em;
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-subtle) 30%, var(--border-subtle) 70%, transparent);
+            margin-bottom: 30px;
+        }
+
+        /* ── Section label ── */
+        .section-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-subtle);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .field.full { grid-column: 1 / -1; }
+
+        .field label {
+            font-size: 11.5px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+
+        .field:focus-within label { color: var(--accent); }
+
+        .field input[type="text"],
+        .field select {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13.5px;
+            font-weight: 400;
+            color: var(--text-primary);
+            outline: none;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .field select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236a8aaa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 13px center;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+
+        .field input[type="text"]::placeholder { color: rgba(106,138,170,0.5); }
+
+        .field input[type="text"]:hover,
+        .field select:hover {
+            background: var(--input-hover);
+            border-color: rgba(0,210,255,0.25);
+        }
+
+        .field input[type="text"]:focus,
+        .field select:focus {
+            background: var(--input-hover);
+            border-color: var(--border-glow);
+            box-shadow: 0 0 0 3px rgba(0,210,255,0.1), 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .field select option {
+            background: #0d1a2e;
+            color: var(--text-primary);
+        }
+
+        /* ── Toggles row ── */
+        .toggles-row {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .toggle-card {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--input-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 12px 14px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            user-select: none;
+        }
+
+        .toggle-card:has(input:checked) {
+            background: var(--accent-dim);
+            border-color: var(--border-glow);
+        }
+
+        .toggle-card:hover {
+            background: var(--input-hover);
+            border-color: rgba(0,210,255,0.25);
+        }
+
+        .toggle-label {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .toggle-card:has(input:checked) .toggle-label {
+            color: var(--accent);
+        }
+
+        /* Custom toggle switch */
+        .toggle-switch {
+            position: relative;
+            width: 34px; height: 18px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0; height: 0;
+            position: absolute;
+        }
+
+        .toggle-track {
+            position: absolute;
+            inset: 0;
+            border-radius: 100px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid var(--border-subtle);
+            transition: background 0.25s, border-color 0.25s;
+        }
+
+        .toggle-thumb {
+            position: absolute;
+            top: 3px; left: 3px;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), background 0.25s;
+        }
+
+        .toggle-switch input:checked ~ .toggle-track {
+            background: var(--accent-dim);
+            border-color: var(--border-glow);
+        }
+
+        .toggle-switch input:checked ~ .toggle-track .toggle-thumb {
+            transform: translateX(16px);
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--bg-deep);
+            background: linear-gradient(135deg, var(--accent) 0%, #5bb8ff 100%);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.15s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(0,210,255,0.35);
+        }
+
+        .btn-submit::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+            border-radius: inherit;
+        }
+
+        .btn-submit::after {
+            content: '';
+            position: absolute;
+            top: -50%; left: -60%;
+            width: 40%; height: 200%;
+            background: rgba(255,255,255,0.25);
+            transform: skewX(-20deg);
+            transition: left 0.5s ease;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,210,255,0.5);
+        }
+
+        .btn-submit:hover::after { left: 120%; }
+
+        .btn-submit:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 15px rgba(0,210,255,0.3);
+        }
+
+        .result {
+            margin-top: 24px;
+            display: none;
+        }
+
+        .result.visible { display: block; }
+
+        .result-inner {
+            background: linear-gradient(135deg, rgba(0,255,179,0.06) 0%, rgba(0,210,255,0.06) 100%);
+            border: 1px solid rgba(0,255,179,0.3);
+            border-radius: 12px;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            animation: resultIn 0.4s cubic-bezier(0.22,1,0.36,1) both;
+        }
+
+        @keyframes resultIn {
+            from { opacity:0; transform: translateY(10px); }
+            to   { opacity:1; transform: translateY(0); }
+        }
+
+        .result-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .result-price {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 26px;
+            font-weight: 500;
+            color: var(--success);
+            text-shadow: 0 0 24px rgba(0,255,179,0.45);
+            letter-spacing: -0.02em;
+        }
+
+        .result-currency {
+            font-size: 13px;
+            font-weight: 400;
+            opacity: 0.7;
+            margin-right: 4px;
+        }
+
+        @media (max-width: 480px) {
+            .card { padding: 32px 22px 28px; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .toggles-row { flex-direction: column; }
+            .title { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="orb-bottom"></div>
+
+<div class="card">
+    <div class="header">
+        <h1 class="title">Laptop Price Predictor</h1>
+        <p class="subtitle">Configure specs below to estimate market value in LKR</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <form action="/" method="POST">
+
+        <div class="section-label">Hardware</div>
+        <div class="grid-2" style="margin-bottom:20px">
+            <div class="field">
+                <label for="ram">RAM (GB)</label>
+                <input class="input" type="text" id="ram" name="ram" placeholder="e.g. 16" required>
+            </div>
+            <div class="field">
+                <label for="weight">Weight (kg)</label>
+                <input class="input" type="text" id="weight" name="weight" placeholder="e.g. 1.8" required>
+            </div>
+            <div class="field">
+                <label for="cpuname">CPU</label>
+                <select name="cpuname" id="cpuname" required>
+                    <option value="" selected hidden>Select CPU</option>
+                    <option value="intelcorei3">Intel Core i3</option>
+                    <option value="intelcorei5">Intel Core i5</option>
+                    <option value="intelcorei7">Intel Core i7</option>
+                    <option value="amd">AMD</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="gpuname">GPU</label>
+                <select name="gpuname" id="gpuname" required>
+                    <option value="" selected hidden>Select GPU</option>
+                    <option value="intel">Intel</option>
+                    <option value="amd">AMD</option>
+                    <option value="nvidia">Nvidia</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="section-label">Identity</div>
+        <div class="grid-2" style="margin-bottom:20px">
+            <div class="field">
+                <label for="company">Brand</label>
+                <select name="company" id="company" required>
+                    <option value="" selected hidden>Select Brand</option>
+                    <option value="acer">Acer</option>
+                    <option value="apple">Apple</option>
+                    <option value="asus">Asus</option>
+                    <option value="dell">Dell</option>
+                    <option value="hp">HP</option>
+                    <option value="lenovo">Lenovo</option>
+                    <option value="msi">MSI</option>
+                    <option value="toshiba">Toshiba</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="typename">Type</label>
+                <select name="typename" id="typename" required>
+                    <option value="" selected hidden>Select Type</option>
+                    <option value="2in1convertible">2-in-1 Convertible</option>
+                    <option value="gaming">Gaming</option>
+                    <option value="netbook">Netbook</option>
+                    <option value="notebook">Notebook</option>
+                    <option value="ultrabook">Ultrabook</option>
+                    <option value="workstation">Workstation</option>
+                </select>
+            </div>
+            <div class="field full">
+                <label for="opsys">Operating System</label>
+                <select name="opsys" id="opsys" required>
+                    <option value="" selected hidden>Select OS</option>
+                    <option value="windows">Windows</option>
+                    <option value="mac">macOS</option>
+                    <option value="linux">Linux</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="section-label">Display</div>
+        <div class="toggles-row">
+            <label class="toggle-card">
+                <span class="toggle-label">Touchscreen</span>
+                <span class="toggle-switch">
+                    <input type="checkbox" name="touchscreen">
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                </span>
+            </label>
+            <label class="toggle-card">
+                <span class="toggle-label">IPS Panel</span>
+                <span class="toggle-switch">
+                    <input type="checkbox" name="ips">
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                </span>
+            </label>
+        </div>
+
+        <button class="btn-submit" type="submit">Predict Price</button>
+    </form>
+
+    <div class="result {% if pred_value != 0 %}visible{% endif %}">
+        {% if pred_value != 0 %}
+        <div class="result-inner">
+            <div>
+                <div class="result-label">Estimated Market Value</div>
+                <div class="result-price"><span class="result-currency">LKR</span>{{ pred_value }}</div>
+            </div>
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style="flex-shrink:0">
+                <circle cx="20" cy="20" r="19" stroke="rgba(0,255,179,0.3)" stroke-width="1.5"/>
+                <path d="M13 21l5 5 9-10" stroke="#00ffb3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+</body>
+</html>
